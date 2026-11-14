@@ -1,0 +1,5 @@
+# Solo se versiona el Spec Pack; grabaciones y material del curso quedan fuera.
+/*
+!/.gitignore
+!/spec-pack/
+.DS_Store

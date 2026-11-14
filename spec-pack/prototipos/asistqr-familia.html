@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AsistQR Familia · Prototipo</title>
+<style>
+  :root{
+    --primary:#1E5AA8; --on-primary:#FFFFFF; --bg:#F6F7F9; --surface:#FFFFFF; --text:#1C1F24; --muted:#5B6270; --line:#E2E5EA;
+    --ok-fg:#14612E; --ok-bg:#E3F4E8; --late-fg:#7A4300; --late-bg:#FDF0DC; --abs-fg:#9B1C1C; --abs-bg:#FCE6E6;
+    --jus-fg:#4B3696; --jus-bg:#ECE8F8; --pen-fg:#3D4450; --pen-bg:#ECEEF1; --page:#DDE2EA;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--text);
+       display:flex;gap:32px;justify-content:center;align-items:flex-start;padding:24px 16px;flex-wrap:wrap}
+  .phone{width:390px;max-width:100%;height:800px;background:var(--bg);border-radius:36px;border:10px solid #111;position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .status{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:13px;font-weight:600;background:var(--surface)}
+  .top{background:var(--surface);padding:10px 16px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);min-height:56px}
+  .top h1{font-size:20px;margin:0;flex:1;font-weight:600}
+  .icon-btn{min-width:48px;min-height:48px;border:0;background:none;font-size:20px;cursor:pointer;position:relative;border-radius:12px;color:var(--text)}
+  .icon-btn:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+  .badge{position:absolute;top:6px;right:4px;background:var(--abs-fg);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 6px}
+  .content{flex:1;overflow-y:auto;padding:16px}
+  .nav{display:flex;background:var(--surface);border-top:1px solid var(--line)}
+  .nav button{flex:1;min-height:60px;border:0;background:none;font-size:12px;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+  .nav button span.i{font-size:20px}
+  .nav button.active{color:var(--primary);font-weight:700}
+  .nav .badge{top:6px;right:calc(50% - 22px)}
+  .card{background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--line)}
+  .card.tap{cursor:pointer}
+  .card h2{font-size:17px;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:14px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;padding:5px 10px;border-radius:12px;margin:8px 0}
+  .ON_TIME{color:var(--ok-fg);background:var(--ok-bg)} .LATE{color:var(--late-fg);background:var(--late-bg)}
+  .ABSENT,.REJECTED{color:var(--abs-fg);background:var(--abs-bg)} .JUSTIFIED{color:var(--jus-fg);background:var(--jus-bg)}
+  .REVIEW{color:#1E4F8F;background:#E4EEFA}
+  .banner{background:#E4EEFA;color:#1E4F8F;border-radius:12px;padding:12px;margin-bottom:12px;font-size:14px;display:flex;gap:10px;align-items:center}
+  .banner .btn{margin-left:auto;flex:none}
+  .NOT_RECORDED{color:var(--pen-fg);background:var(--pen-bg)}
+  .times{font-size:15px;display:flex;gap:16px}
+  .btn{min-height:48px;border-radius:12px;border:0;font-size:16px;font-weight:600;cursor:pointer;padding:0 18px}
+  .btn.primary{background:var(--primary);color:var(--on-primary);width:100%}
+  .btn.primary:disabled{opacity:.55;cursor:not-allowed}
+  .btn.secondary{background:var(--surface);color:var(--primary);border:2px solid var(--primary)}
+  .btn.danger{background:none;color:var(--abs-fg);width:100%}
+  .btn.small{min-height:40px;font-size:14px;padding:0 12px;margin-top:4px}
+  label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+  input,textarea,select{width:100%;min-height:48px;border:1px solid #B9C0CB;border-radius:10px;padding:10px 12px;font-size:16px;background:#fff;color:var(--text);font-family:inherit}
+  textarea{min-height:110px;resize:vertical}
+  .err{color:var(--abs-fg);font-size:14px;margin-top:8px;min-height:18px}
+  .ok-msg{color:var(--ok-fg);background:var(--ok-bg);padding:12px;border-radius:10px;font-size:15px;margin-bottom:12px}
+  .hello{font-size:15px;color:var(--muted);margin:0 0 12px}
+  .tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto}
+  .tabs button{min-height:40px;border-radius:20px;border:1px solid var(--line);background:var(--surface);padding:0 14px;font-size:14px;cursor:pointer;white-space:nowrap}
+  .tabs button.sel{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .month{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .month strong{font-size:17px}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+  .summary div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-size:12px;color:var(--muted)}
+  .summary b{display:block;font-size:20px;color:var(--text)}
+  .day{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap}
+  .day.hl{outline:3px solid var(--primary)}
+  .day .d{width:72px;font-size:14px;font-weight:600}
+  .day .chip{margin:0;font-size:13px;padding:4px 8px}
+  .day .t{margin-left:auto;font-size:14px;color:var(--muted)}
+  .group{font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.03em}
+  .notif{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:6px;cursor:pointer;min-height:48px}
+  .notif.unread{background:#EEF3FB;border-color:#C9D7EE}
+  .notif.unread .txt{font-weight:700}
+  .notif .dot{width:10px;height:10px;border-radius:50%;background:var(--primary);margin-top:6px;flex:none}
+  .notif .dot.off{background:transparent}
+  .notif .txt{flex:1;font-size:15px}
+  .notif .h{font-size:13px;color:var(--muted)}
+  .empty{text-align:center;color:var(--muted);padding:48px 16px;font-size:16px}
+  .empty .big{font-size:40px;display:block;margin-bottom:8px}
+  .toast{position:absolute;top:36px;left:10px;right:10px;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.25);padding:12px 14px;display:flex;gap:10px;transform:translateY(-140%);transition:transform .35s;z-index:5;cursor:pointer}
+  .toast.show{transform:translateY(0)}
+  .toast .app{font-size:12px;color:var(--muted)}
+  .toast .body{font-size:15px;font-weight:600}
+  .logo{text-align:center;margin:40px 0 24px}
+  .logo .mark{width:72px;height:72px;border-radius:18px;background:var(--primary);color:#fff;font-size:34px;display:inline-flex;align-items:center;justify-content:center}
+  .logo h2{margin:12px 0 4px;font-size:22px}
+  .link{background:none;border:0;color:var(--primary);font-size:15px;font-weight:600;cursor:pointer;min-height:48px;padding:0}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .attach{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px}
+  .counter{text-align:right;font-size:13px;color:var(--muted);margin-top:4px}
+  .offline{background:var(--pen-bg);color:var(--pen-fg);padding:24px 16px;border-radius:12px;text-align:center}
+  .panel{width:320px;max-width:100%;background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+  .panel h3{margin:0 0 4px;font-size:17px}
+  .panel p{font-size:14px;color:var(--muted);margin:0 0 12px}
+  .panel button{width:100%;text-align:left;min-height:44px;margin-bottom:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:14px;cursor:pointer;padding:8px 12px;color:var(--text)}
+  .panel .trace{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+  @media (max-width:440px){body{padding:16px}.phone{border-width:6px;border-radius:24px;height:760px}}
+</style>
+</head>
+<body>
+
+<div class="phone" aria-label="Prototipo de la app AsistQR Familia">
+  <div class="status"><span id="clock">08:35</span><span>4G ▮▮▮ 🔋</span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"><span style="font-size:22px">🔔</span><div><div class="app">AsistQR Familia · ahora</div><div class="body" id="toastBody"></div></div></div>
+  <div id="top" class="top"></div>
+  <main id="content" class="content"></main>
+  <nav id="nav" class="nav"></nav>
+</div>
+
+<aside class="panel">
+  <h3>Panel de simulación</h3>
+  <p>Fuera del celular. Sirve para validar el prototipo: simula eventos que en la app real llegan por push desde la API qr-asist.</p>
+  <button onclick="simLateArrival()">🔔 Push: Lucía llega tarde 08:40 (55 min)</button>
+  <button onclick="simCheckout()">🔔 Push: Valeria sale 14:05</button>
+  <button onclick="simOffline()">🔔 Push: Mateo, marca sin conexión</button>
+  <button onclick="togglePreCutoff()">🕖 Alternar antes del corte (07:58)</button>
+  <button onclick="toggleWeekend()">📅 Alternar sábado (sin clases)</button>
+  <button onclick="toggleNet()">📶 Alternar sin conexión</button>
+  <button onclick="toggleNoChildren()">👤 Alternar cuenta sin hijos</button>
+  <button onclick="togglePerm()">🔕 Alternar permiso de avisos negado</button>
+  <button onclick="expireSession()">⏳ Expirar la sesión (8 días sin uso)</button>
+  <button onclick="resetAll()">↺ Reiniciar prototipo</button>
+  <div class="trace" id="trace">Pantalla: P-001 Login · HU-001</div>
+  <p style="font-size:12px;margin-top:10px">El prototipo solo trae datos de octubre y noviembre 2026; la app real permite volver hasta marzo 2026 (RN-040).</p>
+</aside>
+
+<script>
+const TODAY = '2026-11-13'; // viernes; fecha simulada del prototipo
+const WD = ['dom','lun','mar','mié','jue','vie','sáb'];
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const LABEL = {ON_TIME:'✓ Puntual', LATE:'⏱ Tardanza', NOT_RECORDED:'○ Sin marca aún', ABSENT:'! No registra entrada', JUSTIFIED:'✎ Falta justificada', REVIEW:'✎ En revisión'};
+const SCREEN = {login:'P-001 Login · HU-001, HU-002', inicio:'P-002 Inicio · HU-004, HU-005, HU-007, HU-008', historial:'P-003 Historial · HU-006, HU-011, HU-012', avisos:'P-004 Avisos · HU-009', justificar:'P-005 Justificar · HU-010', misjust:'P-006 Mis justificaciones · HU-011', cuenta:'P-007 Cuenta · HU-003, HU-013'};
+
+let S;
+function seed(){
+  const children = [
+    {id:'c1', name:'Lucía Quispe', first:'Lucía', grade:'1', section:'A'},
+    {id:'c2', name:'Valeria Quispe', first:'Valeria', grade:'2', section:'B'},
+    {id:'c3', name:'Mateo Quispe', first:'Mateo', grade:'5', section:'A'},
+  ];
+  const days = {};
+  const schoolDays = (y,m,last) => { const r=[]; for(let d=1; d<=last; d++){ const dt=new Date(y,m-1,d); if(dt.getDay()>0 && dt.getDay()<6) r.push(`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);} return r; };
+  const nov = schoolDays(2026,11,13), oct = schoolDays(2026,10,31);
+  const base = (date,i) => ({date, status:'ON_TIME', late:0, in:`07:${String(34+(i*3)%11).padStart(2,'0')}`, out:`14:0${i%6}`});
+  children.forEach((c,ci)=>{
+    days[c.id] = {};
+    oct.forEach((d,i)=> days[c.id][d] = base(d,i+ci));
+    nov.forEach((d,i)=> days[c.id][d] = base(d,i+ci*2));
+  });
+  // Valeria: datos de las HU
+  Object.assign(days.c2['2026-11-13'], {status:'ON_TIME', in:'07:41', out:null});
+  Object.assign(days.c2['2026-11-12'], {status:'LATE', late:7, in:'07:52', out:'14:02'});
+  Object.assign(days.c2['2026-11-11'], {in:'07:38', out:'14:04'});
+  Object.assign(days.c2['2026-11-10'], {status:'ABSENT', in:null, out:null, review:true});
+  Object.assign(days.c2['2026-10-23'], {status:'JUSTIFIED', in:null, out:null});
+  // Mateo hoy tardanza, Lucía hoy sin entrada
+  Object.assign(days.c3['2026-11-13'], {status:'LATE', late:7, in:'07:52', out:null});
+  Object.assign(days.c1['2026-11-13'], {status:'ABSENT', in:null, out:null});
+  Object.assign(days.c1['2026-11-05'], {status:'LATE', late:12, in:'07:57'});
+  Object.assign(days.c3['2026-11-04'], {status:'ABSENT', in:null, out:null});
+  const inbox = [
+    {id:1, child:'c3', date:'2026-11-13', time:'07:52', text:'Mateo llegó tarde: ingresó a las 07:52 (7 min de tardanza)', icon:'⏱', read:false},
+    {id:2, child:'c2', date:'2026-11-13', time:'07:41', text:'Valeria ingresó a las 07:41', icon:'✓', read:false},
+    {id:3, child:'c1', date:'2026-11-13', time:'08:30', text:'Lucía no registra entrada hoy (13/11)', icon:'!', read:false},
+    {id:4, child:'c2', date:'2026-11-12', time:'14:02', text:'Valeria salió a las 14:02', icon:'→', read:true},
+    {id:5, child:'c2', date:'2026-11-12', time:'07:52', text:'Valeria llegó tarde: ingresó a las 07:52 (7 min de tardanza)', icon:'⏱', read:true},
+    {id:6, child:'c2', date:'2026-11-11', time:'07:38', text:'Valeria ingresó a las 07:38 (registrado sin conexión)', icon:'✓', read:true},
+  ];
+  inbox.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+  const just = [
+    {child:'c2', date:'2026-11-10', reason:'Cita médica en EsSalud a las 08:00', status:'REVIEW'},
+    {child:'c3', date:'2026-11-04', reason:'Viaje familiar a Huancayo', status:'REJECTED'},
+    {child:'c2', date:'2026-10-23', reason:'Fiebre, descanso médico de 1 día', status:'JUSTIFIED'},
+  ];
+  S = {screen:'login', logged:false, children, days, inbox, just, sel:'c2', month:'2026-11', hl:null, online:true, noChildren:false,
+       stack:[], preCutoff:false, weekend:false, permDenied:false, savedLucia:null,
+       loginTries:0, lockUntil:0, form:{child:'c1', date:'2026-11-13', reason:'', file:null}, msg:null};
+}
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDay = d => { const dt=new Date(d+'T12:00:00'); return `${WD[dt.getDay()]} ${d.slice(8,10)}/${d.slice(5,7)}`; };
+const clock = () => S.preCutoff ? '07:58' : '08:35';
+const visibleInbox = () => S.inbox.filter(n => !(n.date===TODAY && !n.sim && n.time > clock()));
+const unread = () => visibleInbox().filter(n=>!n.read).length;
+const kids = () => S.noChildren ? [] : [...S.children].sort((a,b)=> a.grade.localeCompare(b.grade));
+function chip(day){
+  if(day.review && day.status==='ABSENT') return `<span class="chip REVIEW">${LABEL.REVIEW}</span>`;
+  const extra = day.status==='LATE' ? ` · ${day.late} min` : '';
+  return `<span class="chip ${day.status}">${LABEL[day.status]}${extra}</span>`;
+}
+function go(screen, opts={}){
+  const sub = ['justificar','misjust'];
+  if(sub.includes(screen)) { if(S.screen!==screen) S.stack.push(S.screen); } else S.stack = [];
+  Object.assign(S, opts); S.screen = screen; render(); $('content').scrollTop = 0; }
+function back(){ const to = S.stack.pop() || 'inicio'; S.screen = to; if(!['justificar','misjust'].includes(to)) S.stack = []; S.msg = null; render(); }
+
+function render(){
+  $('trace').textContent = 'Pantalla: ' + SCREEN[S.screen];
+  $('clock').textContent = clock();
+  const top = $('top'), c = $('content'), nav = $('nav');
+  if(!S.logged){ top.style.display='none'; nav.style.display='none'; c.innerHTML = loginView(); bindLogin(); return; }
+  if(S.noChildren) S.screen = 'inicio';
+  top.style.display='flex'; nav.style.display = S.noChildren ? 'none' : 'flex';
+  const back = ['justificar','misjust'].includes(S.screen);
+  const titles = {inicio:'AsistQR Familia', historial:'Historial', avisos:'Avisos', justificar:'Justificar falta', misjust:'Mis justificaciones', cuenta:'Cuenta'};
+  top.innerHTML = (back ? `<button class="icon-btn" aria-label="Atrás" onclick="back()">←</button>` : '')
+    + `<h1>${titles[S.screen]}</h1>`
+    + (S.screen==='historial' ? `<button class="icon-btn" aria-label="Descargar PDF" onclick="downloadPdf()">⤓</button>` : '')
+    + (S.screen==='inicio' && !S.noChildren ? `<button class="icon-btn" aria-label="Avisos, ${unread()} sin leer" onclick="go('avisos')">🔔${unread()?`<span class="badge">${unread()}</span>`:''}</button>` : '');
+  const tabs = [['inicio','⌂','Inicio'],['historial','▦','Historial'],['avisos','🔔','Avisos'],['cuenta','☺','Cuenta']];
+  nav.innerHTML = tabs.map(([k,i,l])=>`<button class="${S.screen===k||(k==='historial'&&['justificar','misjust'].includes(S.screen))?'active':''}" onclick="go('${k}',{hl:null})" aria-label="${l}"><span class="i">${i}</span>${l}${k==='avisos'&&unread()?`<span class="badge">${unread()}</span>`:''}</button>`).join('');
+  if(!S.online && S.screen!=='cuenta'){ c.innerHTML = `<div class="offline"><div style="font-size:36px">📡</div><p style="font-size:17px;font-weight:600">Sin conexión. Revisa tu internet.</p><button class="btn secondary" onclick="toggleNet()">Reintentar</button></div>`; return; }
+  c.innerHTML = ({inicio:homeView, historial:historyView, avisos:inboxView, justificar:justifyView, misjust:myJustView, cuenta:accountView})[S.screen]();
+  if(S.screen==='justificar') bindJustify();
+}
+
+function loginView(){
+  const locked = Date.now() < S.lockUntil;
+  return `<div class="logo"><div class="mark">QR</div><h2>AsistQR Familia</h2><div class="sub">Colegio · Asistencia de tus hijos</div></div>
+  ${S.msg?`<div class="err" style="text-align:center">${S.msg}</div>`:''}
+  <p class="sub">Ingresa con el correo que registraste en secretaría.</p>
+  <label for="em">Correo electrónico</label><input id="em" type="email" value="rosa.quispe@mail.com" autocomplete="email">
+  <label for="pw">Contraseña</label><input id="pw" type="password" value="contraseña-demo" autocomplete="current-password">
+  <div class="err" id="lerr"></div>
+  <button class="btn primary" id="lbtn" ${locked?'disabled':''}>${locked?'Intenta de nuevo en '+Math.ceil((S.lockUntil-Date.now())/1000)+' s':'Ingresar'}</button>
+  <p class="sub" style="margin-top:16px;text-align:center">¿Olvidaste tu contraseña? Comunícate con secretaría.</p>
+  <p class="sub" style="font-size:13px;text-align:center">Prototipo: escribe la contraseña <b>mal</b> para ver el error (RN-002). Al tercer intento fallido se simula el bloqueo de 60 s (RN-003; en la app real ocurre al intento 21 en un minuto).</p>`;
+}
+function bindLogin(){
+  $('lbtn').onclick = () => {
+    const em = $('em').value.trim(), pw = $('pw').value;
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ $('lerr').textContent = 'Escribe un correo válido'; return; }
+    if(pw !== 'contraseña-demo'){ S.loginTries++; $('pw').value=''; $('lerr').textContent = 'Correo o contraseña incorrectos';
+      if(S.loginTries>=3){ S.lockUntil = Date.now()+60000; S.loginTries=0; render(); const t=setInterval(()=>{ if(S.logged||Date.now()>=S.lockUntil){clearInterval(t);} if(!S.logged) render(); },1000);} return; }
+    S.logged = true; S.msg = null; go('inicio');
+  };
+}
+
+function homeView(){
+  const list = kids();
+  if(!list.length) return `<div class="empty"><span class="big">👨‍👩‍👧</span>Tu cuenta aún no tiene estudiantes vinculados.<br>Comunícate con secretaría.<br><br><button class="btn secondary" onclick="logout()">Cerrar sesión</button></div>`;
+  const banner = S.permDenied ? `<div class="banner"><span>🔕</span><span>Activa las notificaciones para saber cuándo tus hijos entran y salen</span><button class="btn secondary small" onclick="alert('Abre los ajustes de notificaciones de la app (sistema)')">Activar</button></div>` : '';
+  if(S.weekend) return banner + `<p class="hello">Hola, Rosa · Hoy, sábado 14/11</p>` + list.map(k=>{
+    const d = S.days[k.id][TODAY];
+    return `<div class="card tap" role="button" tabindex="0" onclick="go('historial',{sel:'${k.id}',month:'2026-11',hl:'${TODAY}'})">
+      <h2>${esc(k.name)}</h2><div class="sub">${k.grade}.° ${k.section}</div><p style="margin:8px 0 0;font-weight:600">Hoy no hay clases</p>
+      <div class="sub">Viernes 13/11: ${chip(d)}</div></div>`; }).join('');
+  return banner + `<p class="hello">Hola, Rosa · Hoy, viernes 13/11</p>` + list.map(k=>{
+    const d = S.days[k.id][TODAY];
+    const just = d.status==='ABSENT' && !d.review ? `<div><button class="btn secondary small" onclick="event.stopPropagation();openJustify('${k.id}','${TODAY}')">Justificar</button></div>` : '';
+    return `<div class="card tap" role="button" tabindex="0" onclick="go('historial',{sel:'${k.id}',month:'2026-11',hl:'${TODAY}'})">
+      <h2>${esc(k.name)}</h2><div class="sub">${k.grade}.° ${k.section}</div>${chip(d)}
+      ${d.in||d.out?`<div class="times"><span>Entrada <b>${d.in||'—'}</b></span><span>Salida <b>${d.out||'—'}</b></span></div>`:''}${just}</div>`;
+  }).join('');
+}
+
+function historyView(){
+  const list = kids(); const k = S.children.find(x=>x.id===S.sel);
+  const [y,m] = S.month.split('-').map(Number);
+  const entries = Object.values(S.days[k.id]).filter(d=>d.date.startsWith(S.month) && d.date<=TODAY).sort((a,b)=>b.date.localeCompare(a.date));
+  const cnt = s => entries.filter(d=>d.status===s).length;
+  const isCurrent = S.month==='2026-11', isFirst = S.month==='2026-10';
+  return (list.length>1?`<div class="tabs" role="tablist">${list.map(x=>`<button role="tab" aria-selected="${x.id===S.sel}" class="${x.id===S.sel?'sel':''}" onclick="go('historial',{sel:'${x.id}',hl:null})">${esc(x.first)}</button>`).join('')}</div>`:'')
+  + `<div class="month"><button class="icon-btn" aria-label="Mes anterior" ${isFirst?'disabled style="opacity:.3"':''} onclick="go('historial',{month:'2026-10',hl:null})">‹</button><strong>${MONTHS[m-1][0].toUpperCase()+MONTHS[m-1].slice(1)} ${y}</strong><button class="icon-btn" aria-label="Mes siguiente" ${isCurrent?'disabled style="opacity:.3"':''} onclick="go('historial',{month:'2026-11',hl:null})">›</button></div>`
+  + `<div class="summary"><div><b>${cnt('ON_TIME')}</b>Puntual</div><div><b>${cnt('LATE')}</b>Tardanza</div><div><b>${cnt('ABSENT')}</b>No registra</div><div><b>${cnt('JUSTIFIED')}</b>Justificada</div></div>`
+  + entries.map(d=>`<div class="day ${S.hl===d.date?'hl':''}"><span class="d">${fmtDay(d.date)}</span>${chip(d)}
+      ${d.status==='ABSENT'&&!d.review?`<button class="btn secondary small" onclick="openJustify('${k.id}','${d.date}')">Justificar</button>`:`<span class="t">${d.in||'—'} – ${d.out||'—'}</span>`}</div>`).join('')
+  + `<div class="row" style="margin-top:12px"><button class="link" onclick="go('misjust')">Mis justificaciones ›</button><button class="link" onclick="downloadPdf()">⤓ Descargar PDF</button></div>`;
+}
+
+function inboxView(){
+  if(!visibleInbox().length) return `<div class="empty"><span class="big">🔕</span>Aún no tienes avisos</div>`;
+  let last = '', html = '';
+  visibleInbox().forEach(n=>{
+    const g = S.weekend ? (n.date===TODAY?'Ayer':fmtDay(n.date)) : (n.date===TODAY?'Hoy':n.date==='2026-11-12'?'Ayer':fmtDay(n.date));
+    if(g!==last){ html += `<div class="group">${g}</div>`; last = g; }
+    html += `<div class="notif ${n.read?'':'unread'}" role="button" tabindex="0" onclick="openNotif(${n.id})"><span class="dot ${n.read?'off':''}"></span><span style="font-size:18px">${n.icon}</span><div class="txt">${esc(n.text)}<div class="h">${n.time}</div></div></div>`;
+  });
+  return html + `<p class="sub" style="text-align:center;font-size:13px">Avisos de los últimos 30 días</p>`;
+}
+
+function eligible(childId){ return Object.values(S.days[childId]).filter(d=>d.date<=TODAY && (d.status==='ABSENT'||d.status==='NOT_RECORDED')).sort((a,b)=>b.date.localeCompare(a.date)); }
+function justifyView(){
+  const f = S.form, opts = eligible(f.child);
+  if(S.msg) return `<div class="ok-msg">${S.msg}</div><button class="btn primary" onclick="S.msg=null;go('historial',{sel:'${f.child}',month:'${f.date.slice(0,7)}',hl:'${f.date}'})">Ver historial</button>`;
+  return `<label for="jc">Estudiante</label><select id="jc">${kids().map(k=>`<option value="${k.id}" ${k.id===f.child?'selected':''}>${esc(k.name)}</option>`).join('')}</select>
+  <label for="jd">Fecha (solo días sin entrada)</label>
+  ${opts.length?`<select id="jd">${opts.map(d=>`<option value="${d.date}" ${d.date===f.date?'selected':''}>${fmtDay(d.date)}/2026${d.review?' · ya en revisión':''}</option>`).join('')}</select>`:`<p class="sub">Este estudiante no tiene días por justificar.</p>`}
+  <label for="jr">Motivo</label><textarea id="jr" maxlength="500" placeholder="Ej.: Cita médica en EsSalud a las 08:00">${esc(f.reason)}</textarea>
+  <div class="counter" id="jcount">${f.reason.length}/500</div>
+  <button class="btn secondary" id="jfile" style="width:100%;margin-top:8px">📎 Adjuntar sustento (foto o PDF, máx. 5 MB)</button>
+  <div id="jatt">${f.file?`<div class="attach">🖼️ ${f.file.name} · ${f.file.size} MB <button class="icon-btn" aria-label="Quitar adjunto" onclick="S.form.file=null;render()">✕</button></div>`:''}</div>
+  <div class="err" id="jerr"></div>
+  <p class="sub">El tutor revisará tu justificación.</p>
+  <button class="btn primary" id="jsend" ${opts.length?'':'disabled'}>Enviar</button>`;
+}
+function bindJustify(){
+  if(S.msg) return;
+  $('jc').onchange = e => { S.form.child = e.target.value; const o = eligible(S.form.child); S.form.date = o[0]?o[0].date:TODAY; render(); };
+  if($('jd')) $('jd').onchange = e => S.form.date = e.target.value;
+  $('jr').oninput = e => { S.form.reason = e.target.value; $('jcount').textContent = e.target.value.length+'/500'; };
+  let toggle = 0;
+  $('jfile').onclick = () => { toggle++; if(toggle%2){ S.form.file={name:'certificado.jpg', size:2.1}; $('jerr').textContent=''; render(); } else { S.form.file=null; render(); $('jerr').textContent='El archivo pesa más de 5 MB (certificado.pdf · 5.3 MB)'; } };
+  $('jsend').onclick = () => {
+    const f = S.form, day = S.days[f.child][f.date];
+    if(f.reason.trim().length < 10){ $('jerr').textContent = 'Escribe al menos 10 caracteres'; return; }
+    if(day.review){ $('jerr').textContent = 'Ya enviaste una justificación para este día y está en revisión.'; return; }
+    day.review = true; S.just.unshift({child:f.child, date:f.date, reason:f.reason.trim(), status:'REVIEW'});
+    S.msg = 'Justificación enviada. El tutor la revisará.'; render();
+  };
+}
+function openJustify(child, date){ S.form = {child, date, reason:'', file:null}; S.msg=null; go('justificar'); }
+
+function myJustView(){
+  if(!S.just.length) return `<div class="empty"><span class="big">📄</span>No has enviado justificaciones</div>`;
+  return S.just.map(j=>{ const k=S.children.find(x=>x.id===j.child);
+    return `<div class="card tap" role="button" tabindex="0" onclick="go('historial',{sel:'${j.child}',month:'${j.date.slice(0,7)}',hl:'${j.date}'})"><div class="row"><b>${esc(k.first)} · ${fmtDay(j.date)}</b><span class="chip ${j.status}" style="margin:0">${j.status==='REVIEW'?'✎ En revisión':j.status==='JUSTIFIED'?'✓ Aprobada':'✕ Rechazada'}</span></div><div class="sub">${esc(j.reason)}</div>${j.status==='REJECTED'?`<button class="btn secondary small" onclick="event.stopPropagation();openJustify('${j.child}','${j.date}')">Justificar de nuevo</button>`:''}</div>`; }).join('');
+}
+
+function accountView(){
+  return `<div class="card"><div class="sub">Sesión iniciada como</div><b>rosa.quispe@mail.com</b></div>
+  <div class="card"><h2>Cambiar contraseña</h2>
+    <label for="p1">Contraseña actual</label><input id="p1" type="password">
+    <label for="p2">Nueva contraseña (12 a 128 caracteres)</label><input id="p2" type="password">
+    <label for="p3">Repite la nueva contraseña</label><input id="p3" type="password">
+    <div class="err" id="perr"></div><button class="btn primary" onclick="changePw()">Guardar</button></div>
+  ${S.noChildren?'':`<div class="card tap" role="button" tabindex="0" onclick="go('misjust')"><div class="row"><b>Mis justificaciones</b><span>›</span></div></div>`}
+  <button class="btn danger" onclick="logout()">Cerrar sesión</button>
+  <p class="sub" style="text-align:center;font-size:13px">Versión 1.0.0 (prototipo)</p>`;
+}
+function changePw(){
+  const a=$('p1').value, b=$('p2').value, c=$('p3').value, e=$('perr');
+  e.style.color='var(--abs-fg)';
+  if(!a){ e.textContent='Escribe tu contraseña actual'; return; }
+  if(b.length<12 || b.length>128){ e.textContent='La nueva contraseña debe tener entre 12 y 128 caracteres'; return; }
+  if(b!==c){ e.textContent='Las contraseñas no coinciden'; return; }
+  if(a!=='contraseña-demo'){ e.textContent='La contraseña actual no es correcta'; return; }
+  e.style.color='var(--ok-fg)'; e.textContent='Contraseña actualizada';
+}
+function logout(){ if(confirm('¿Cerrar sesión? Dejarás de recibir avisos en este celular.')){ S.logged=false; S.msg=null; go('login'); } }
+function downloadPdf(){ const k=S.children.find(x=>x.id===S.sel); alert(`Hoja de compartir del sistema\n\nasistencia-${k.first.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}-${S.month}.pdf`); }
+function openNotif(id){ const n=S.inbox.find(x=>x.id===id); n.read=true; go('historial',{sel:n.child, month:n.date.slice(0,7), hl:n.date}); }
+
+let toastTimer;
+function push(child, text, icon, apply){
+  if(!S.logged){ alert('Primero inicia sesión en el prototipo.'); return; }
+  apply();
+  const id = Date.now(); S.inbox.unshift({id, child, date:TODAY, time:text.match(/\d\d:\d\d/)[0], text, icon, read:false, sim:true});
+  $('toastBody').textContent = text; const t=$('toast'); t.classList.add('show'); t.onclick=()=>{t.classList.remove('show'); openNotif(id);};
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),4500);
+  render();
+}
+function simLateArrival(){ push('c1','Lucía llegó tarde: ingresó a las 08:40 (55 min de tardanza)','⏱',()=>Object.assign(S.days.c1[TODAY],{status:'LATE',late:55,in:'08:40'})); }
+function simCheckout(){ push('c2','Valeria salió a las 14:05','→',()=>Object.assign(S.days.c2[TODAY],{out:'14:05'})); }
+function simOffline(){ push('c3','Mateo salió a las 13:58 (registrado sin conexión)','→',()=>Object.assign(S.days.c3[TODAY],{out:'13:58'})); }
+function toggleNet(){ S.online=!S.online; render(); }
+function toggleNoChildren(){ S.noChildren=!S.noChildren; if(S.logged) go('inicio'); }
+function togglePreCutoff(){
+  if(S.weekend) S.weekend = false;
+  S.preCutoff = !S.preCutoff; const d = S.days.c1[TODAY];
+  if(S.preCutoff){ S.savedLucia = {...d}; Object.assign(d,{status:'NOT_RECORDED', late:0, in:null, out:null}); }
+  else if(S.savedLucia){ Object.assign(d, S.savedLucia); }
+  render(); }
+function toggleWeekend(){ if(S.preCutoff) togglePreCutoff(); S.weekend=!S.weekend; if(S.logged) go('inicio'); }
+function togglePerm(){ S.permDenied=!S.permDenied; if(S.logged) go('inicio'); }
+function expireSession(){ if(!S.logged){ alert('Primero inicia sesión en el prototipo.'); return; } S.logged=false; S.msg='Tu sesión expiró. Ingresa de nuevo.'; go('login'); }
+function resetAll(){ clearTimeout(toastTimer); $('toast').classList.remove('show'); seed(); render(); }
+seed(); render();
+</script>
+</body>
+</html>
